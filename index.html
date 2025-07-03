@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración Avanzada del Hotel</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-active {
+            border-color: #4F46E5; /* Indigo 600 */
+            color: #4F46E5; /* Indigo 600 */
+        }
+        th {
+             user-select: none; /* Prevent text selection on headers */
+        }
+         th.sortable {
+            cursor: pointer;
+         }
+        th.sortable .sort-icon {
+            margin-left: 0.5rem;
+            font-size: 0.75em;
+            vertical-align: middle;
+            color: #9ca3af; /* gray-400 */
+        }
+         th.sortable:hover .sort-icon,
+         th.sortable.sorted .sort-icon {
+            color: #6b7280; /* gray-500 */
+         }
+
+
+        #message-box {
+            display: none;
+            z-index: 100; /* Make sure it's above other content */
+        }
+
+        /* Badge styles for status/payment */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* full rounded */
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 500; /* font-medium */
+            line-height: 1;
+        }
+        .badge-green {
+            background-color: #D1FAE5; /* green-100 */
+            color: #065F46; /* green-800 */
+        }
+        .badge-red {
+            background-color: #FEE2E2; /* red-100 */
+            color: #991B1B; /* red-800 */
+        }
+         .badge-yellow {
+            background-color: #FEF3C7; /* yellow-100 */
+            color: #92400E; /* yellow-800 */
+        }
+         .badge-purple {
+            background-color: #EDE9FE; /* purple-100 */
+            color: #5B21B6; /* purple-800 */
+        }
+
+
+        /* Modal Styles (Moved from temporary to permanent) */
+        .modal-overlay {
+            display: none; /* Controlado por JS */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 1000; /* Z-index muy alto para asegurar que esté al frente */
+            /* Para centrar el contenido si usamos display: flex en JS */
+             align-items: center;
+             justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px; /* More rounded */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); /* Stronger shadow */
+            width: 95%; /* Wider on small screens */
+            max-width: 600px; /* Wider max-width for more fields */
+            /* position: absolute; /* Removed absolute positioning */
+            /* top: 50%; */
+            /* left: 50%; */
+            /* transform: translate(-50%, -50%); */
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1001; /* Encima del overlay */
+        }
+        .modal-close-btn {
+            position: absolute; /* Position absolute relative to modal-content */
+            top: 15px; /* Adjust position */
+            right: 15px; /* Adjust position */
+            font-size: 1.5rem;
+            color: #6b7280; /* gray-500 */
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: color 0.2s ease-in-out;
+        }
+         .modal-close-btn:hover {
+             color: #374151; /* gray-700 */
+         }
+
+        /* Ensure form grid works within modal */
+        #modal-form-content {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid */
+             gap: 1rem; /* gap-4 */
+        }
+
+        /* Add a specific style for readonly input */
+        .modal-content input[readonly] {
+            background-color: #f3f4f6; /* gray-100 */
+            cursor: not-allowed;
+        }
+
+        /* Adjust action button spacing for mobile */
+        .action-button i + span {
+            margin-left: 0.25rem; /* space-x-1 */
+        }
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+        }
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto bg-white p-4 sm:p-6 rounded-lg shadow-lg">
+
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Panel de Administración del Hotel</h1>
+        </div>
+
+        <div class="mb-6 border-b border-gray-200 overflow-x-auto">
+            <nav class="-mb-px flex space-x-6 sm:space-x-8" aria-label="Tabs">
+                <button onclick="showTab('reservas')" id="tab-reservas" class="tab-active whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm">
+                    <i class="fas fa-calendar-alt mr-1 sm:mr-2"></i>Reservas
+                </button>
+                <button onclick="showTab('habitaciones')" id="tab-habitaciones" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm">
+                    <i class="fas fa-bed mr-1 sm:mr-2"></i>Habitaciones
+                </button>
+                <button onclick="showTab('huespedes')" id="tab-huespedes" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-sm">
+                    <i class="fas fa-users mr-1 sm:mr-2"></i>Huéspedes
+                </button>
+            </nav>
+        </div>
+
+        <div id="content-reservas" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700">Gestión de Reservas</h2>
+                <button id="btn-open-add-reserva-modal" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i class="fas fa-plus mr-2"></i>Nueva Reserva
+                </button>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg shadow mb-6">
+                <h3 class="text-lg font-medium mb-3 text-gray-900">Filtrar Reservas por Fecha</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label for="filter-start-date" class="block text-sm font-medium text-gray-700">Desde</label>
+                        <input type="date" id="filter-start-date" name="filter-start-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="filter-end-date" class="block text-sm font-medium text-gray-700">Hasta</label>
+                        <input type="date" id="filter-end-date" name="filter-end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 md:col-span-2">
+                         <button id="btn-filter-reservas" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-filter mr-2"></i>Filtrar
+                         </button>
+                         <button id="btn-clear-filter-reservas" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-times mr-2"></i>Limpiar
+                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                 <h3 class="text-lg font-medium text-gray-900 mb-2 sm:mb-0">Reporte Mensual</h3>
+                 <div class="flex-shrink-0">
+                    <label for="reporte-mes" class="sr-only">Mes y Año</label>
+                    <input type="month" id="reporte-mes" name="reporte-mes" class="w-full sm:w-auto rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                 </div>
+                 <button id="btn-download-report" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <i class="fas fa-download mr-2"></i>Descargar Reporte (CSV)
+                 </button>
+            </div>
+
+            <div class="overflow-x-auto shadow rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="id">ID <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="huesped">Huésped <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="habitacion">Habitación <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="checkin">Check-in <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="checkout">Check-out <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Noches</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="total">Total (COP) <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="pago">Pago <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-reservas-body" class="bg-white divide-y divide-gray-200">
+                         </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="content-habitaciones" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700">Gestión de Habitaciones</h2>
+                <button id="btn-open-add-habitacion-modal" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i class="fas fa-plus mr-2"></i>Nueva Habitación
+                </button>
+            </div>
+             <div class="overflow-x-auto shadow rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="numero">Número <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="tipo">Tipo <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="precio">Precio/Noche (COP) <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="estado">Estado <span class="sort-icon fas fa-sort"></span></th>
+                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-habitaciones-body" class="bg-white divide-y divide-gray-200">
+                         </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="content-huespedes" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700">Gestión de Huéspedes</h2>
+                <button id="btn-open-add-huesped-modal" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i class="fas fa-user-plus mr-2"></i>Nuevo Huésped
+                </button>
+            </div>
+            <div class="overflow-x-auto shadow rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="id">ID <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="nombre">Nombre <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="email">Email <span class="sort-icon fas fa-sort"></span></th>
+                             <!-- NEW: Identification Columns -->
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="tipoIdentificacion">Tipo ID <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="numeroIdentificacion">Número ID <span class="sort-icon fas fa-sort"></span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-huespedes-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 flex justify-end">
+             <button id="btn-clear-all-data" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Borrar Todos los Datos
+             </button>
+        </div>
+    </div>
+
+    <div id="message-box"></div>
+
+    <div id="generic-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="modal-close-button" class="modal-close-btn"><i class="fas fa-times"></i></button>
+            <h3 id="modal-title" class="text-lg font-medium mb-4 text-gray-900">Título del Modal</h3>
+            <form id="modal-form">
+                <div id="modal-form-content" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    </div>
+                 <input type="hidden" id="edit-id" name="edit-id"> <div class="modal-buttons mt-6 flex justify-end space-x-3">
+                    <button type="button" id="modal-cancel-button" class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancelar</button>
+                    <button type="submit" id="modal-save-button" class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-blue-600 bg-blue-600 hover:bg-blue-700">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // --- localStorage Keys ---
+        // MODIFIED: Version bump for new guest data structure
+        const HUESPEDES_KEY = 'hotelAdmin_huespedes_v4';
+        const HABITACIONES_KEY = 'hotelAdmin_habitaciones_v4';
+        const RESERVAS_KEY = 'hotelAdmin_reservas_v4';
+        const NEXT_HUESPED_ID_KEY = 'hotelAdmin_nextHuespedId_v4';
+        const NEXT_RESERVA_ID_KEY = 'hotelAdmin_nextReservaId_v4';
+
+        // --- Data Storage (Loaded from localStorage) ---
+        let huespedes = [];
+        let habitaciones = [];
+        let reservas = [];
+        let nextHuespedId = 1;
+        let nextReservaId = 1001;
+
+        // Sorting state
+        let currentSort = { column: null, direction: 'asc' };
+
+
+        // --- DOM Elements ---
+        const tabButtons = document.querySelectorAll('nav button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tableHuespedesBody = document.getElementById('table-huespedes-body');
+        const tableHabitacionesBody = document.getElementById('table-habitaciones-body');
+        const tableReservasBody = document.getElementById('table-reservas-body');
+        // selectReservaHuesped and selectReservaHabitacion are now handled dynamically in the modal
+        const messageBox = document.getElementById('message-box');
+        const inputReporteMes = document.getElementById('reporte-mes');
+        const btnDownloadReport = document.getElementById('btn-download-report');
+        const btnClearAllData = document.getElementById('btn-clear-all-data');
+        const filterStartDateInput = document.getElementById('filter-start-date');
+        const filterEndDateInput = document.getElementById('filter-end-date');
+        const btnFilterReservas = document.getElementById('btn-filter-reservas');
+        const btnClearFilterReservas = document.getElementById('btn-clear-filter-reservas');
+
+        // Modal DOM Elements
+        const genericModal = document.getElementById('generic-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalFormContent = document.getElementById('modal-form-content');
+        const modalForm = document.getElementById('modal-form');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalSaveButton = document.getElementById('modal-save-button');
+        const editIdInput = document.getElementById('edit-id');
+
+        // Buttons to open modals
+        const btnOpenAddHuespedModal = document.getElementById('btn-open-add-huesped-modal');
+        const btnOpenAddHabitacionModal = document.getElementById('btn-open-add-habitacion-modal');
+        const btnOpenAddReservaModal = document.getElementById('btn-open-add-reserva-modal');
+
+
+        // --- Functions ---
+
+        function loadDataFromLocalStorage() {
+            try {
+                const storedHuespedes = localStorage.getItem(HUESPEDES_KEY);
+                const storedHabitaciones = localStorage.getItem(HABITACIONES_KEY);
+                const storedReservas = localStorage.getItem(RESERVAS_KEY);
+                const storedNextHuespedId = localStorage.getItem(NEXT_HUESPED_ID_KEY);
+                const storedNextReservaId = localStorage.getItem(NEXT_RESERVA_ID_KEY);
+
+                huespedes = storedHuespedes ? JSON.parse(storedHuespedes) : [];
+                habitaciones = storedHabitaciones ? JSON.parse(storedHabitaciones) : [];
+                reservas = storedReservas ? JSON.parse(storedReservas) : [];
+
+                // Ensure default values for potentially missing fields from older versions
+                reservas.forEach(res => {
+                    if (res.estadoPago === undefined) res.estadoPago = 'Pendiente';
+                });
+                 huespedes.forEach(h => { // NEW: Ensure new fields exist even if loading old data
+                     if (h.tipoIdentificacion === undefined) h.tipoIdentificacion = '';
+                     if (h.numeroIdentificacion === undefined) h.numeroIdentificacion = '';
+                 });
+
+                // Default room statuses if old data exists or status is invalid
+                habitaciones.forEach(hab => {
+                    const validStatuses = ['Disponible', 'Ocupada', 'Needs Cleaning', 'Maintenance'];
+                    if (!validStatuses.includes(hab.estado)) {
+                        // If it's an old status or undefined, try to infer or set default
+                        const isBooked = reservas.some(res => res.numeroHabitacion === hab.numero && new Date(res.checkout) > new Date() && new Date(res.checkin) <= new Date());
+                        hab.estado = isBooked ? 'Ocupada' : 'Disponible';
+                    }
+                });
+
+
+                // Load or set initial data if localStorage is empty for *this version*
+                if (!storedHuespedes && !storedHabitaciones && !storedReservas) { // Check if ANY of the new keys are missing
+                     huespedes = [
+                        // MODIFIED: Added identification fields and phone
+                        { id: 1, nombre: 'Juan Pérez', email: 'juan.perez@email.com', telefono: '3001112233', tipoIdentificacion: 'CC', numeroIdentificacion: '1010123456' },
+                        { id: 2, nombre: 'Ana García', email: 'ana.garcia@email.com', telefono: '3104445566', tipoIdentificacion: 'CE', numeroIdentificacion: '900789123' }
+                    ];
+                    habitaciones = [
+                        // MODIFIED: Changed currency implication from $ to COP $
+                        { numero: '101', tipo: 'Individual', precio: 50000.00, estado: 'Disponible' },
+                        { numero: '102', tipo: 'Doble', precio: 80000.00, estado: 'Disponible' },
+                        { numero: '201', tipo: 'Suite', precio: 150000.00, estado: 'Ocupada' },
+                        { numero: '103', tipo: 'Individual', precio: 55000.00, estado: 'Needs Cleaning' } // Added status
+                    ];
+                    reservas = [
+                        { id: 1001, idHuesped: 2, numeroHabitacion: '201', checkin: '2025-07-10', checkout: '2025-07-12', estadoPago: 'Pendiente' }
+                    ];
+                    nextHuespedId = 3;
+                    nextReservaId = 1002;
+                    saveDataToLocalStorage(); // Save the initial data
+                } else {
+                    // Load next IDs, defaulting if necessary (consider potential gaps)
+                    nextHuespedId = storedNextHuespedId ? parseInt(storedNextHuespedId) : (huespedes.length > 0 ? Math.max(0, ...huespedes.map(h => h.id)) + 1 : 1);
+                    nextReservaId = storedNextReservaId ? parseInt(storedNextReservaId) : (reservas.length > 0 ? Math.max(1000, ...reservas.map(r => r.id)) + 1 : 1001);
+                }
+
+            } catch (error) {
+                console.error("Error loading data from localStorage:", error);
+                showMessage("Error al cargar datos. Se usarán valores por defecto.", "error");
+                // Reset data if loading fails
+                huespedes = []; habitaciones = []; reservas = []; nextHuespedId = 1; nextReservaId = 1001;
+            }
+        }
+
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem(HUESPEDES_KEY, JSON.stringify(huespedes));
+                localStorage.setItem(HABITACIONES_KEY, JSON.stringify(habitaciones));
+                localStorage.setItem(RESERVAS_KEY, JSON.stringify(reservas));
+                localStorage.setItem(NEXT_HUESPED_ID_KEY, nextHuespedId.toString());
+                localStorage.setItem(NEXT_RESERVA_ID_KEY, nextReservaId.toString());
+            } catch (error) {
+                console.error("Error saving data:", error);
+                showMessage("Error al guardar los datos.", "error");
+            }
+        }
+
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = ''; // Clear existing classes
+            messageBox.classList.add('fixed', 'bottom-5', 'left-1/2', '-translate-x-1/2', 'px-4', 'py-2', 'rounded-md', 'shadow-md', 'text-sm', 'z-[100]'); // Base classes
+            if (type === 'success') messageBox.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+            else if (type === 'error') messageBox.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+            else messageBox.classList.add('bg-gray-100', 'border', 'border-gray-400', 'text-gray-700'); // Default info/warning
+            messageBox.style.display = 'block';
+            setTimeout(() => { messageBox.style.display = 'none'; }, 3000);
+        }
+
+        function showTab(tabId) {
+            tabContents.forEach(content => content.classList.add('hidden'));
+            tabButtons.forEach(button => {
+                button.classList.remove('tab-active');
+                button.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                 button.style.borderColor = ''; // Reset border color
+                 button.style.color = ''; // Reset text color
+            });
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            const activeTabButton = document.getElementById(`tab-${tabId}`);
+            activeTabButton.classList.add('tab-active');
+            activeTabButton.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            currentSort = { column: null, direction: 'asc' }; // Reset sort on tab change
+            updateSortIcons(tabId); // Clear sort icons for all tables
+        }
+
+        function calculateNights(checkinStr, checkoutStr) {
+            try {
+                const checkin = new Date(checkinStr);
+                const checkout = new Date(checkoutStr);
+                if (isNaN(checkin) || isNaN(checkout) || checkout <= checkin) return 0;
+                // Ensure dates are treated consistently (e.g., start of day) for difference calculation
+                const checkinUTC = Date.UTC(checkin.getFullYear(), checkin.getMonth(), checkin.getDate());
+                const checkoutUTC = Date.UTC(checkout.getFullYear(), checkout.getMonth(), checkout.getDate());
+
+                const diffTime = Math.abs(checkoutUTC - checkinUTC);
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            } catch (e) {
+                console.error("Error calculating nights:", e);
+                return 0;
+            }
+        }
+
+        // Modal Open/Close functions
+        function openModal(type, id = null) { // type: 'huesped', 'habitacion', 'reserva'
+            modalForm.reset();
+            editIdInput.value = id || '';
+            let formHtml = '';
+            let title = '';
+            modalFormContent.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4'; // Reset grid layout
+
+            if (type === 'huesped') {
+                const huesped = id ? huespedes.find(h => h.id === parseInt(id)) : null;
+                title = id ? `Editar Huésped (ID: ${id})` : 'Registrar Nuevo Huésped';
+                const identificationTypes = ["CC", "CE", "NIT", "Pasaporte", "Otro"]; // Common ID types in Colombia
+
+                formHtml = `
+                    <div>
+                        <label for="modal-huesped-nombre" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <input type="text" id="modal-huesped-nombre" name="huesped-nombre" required placeholder="Nombre Apellido" value="${huesped ? huesped.nombre : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="modal-huesped-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="modal-huesped-email" name="huesped-email" required placeholder="correo@ejemplo.com" value="${huesped ? huesped.email : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                     <!-- NEW: Identification Fields -->
+                    <div>
+                        <label for="modal-huesped-tipo-identificacion" class="block text-sm font-medium text-gray-700">Tipo Identificación</label>
+                         <select id="modal-huesped-tipo-identificacion" name="huesped-tipo-identificacion" required class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Seleccione tipo...</option>
+                             ${identificationTypes.map(t => `<option value="${t}" ${huesped && huesped.tipoIdentificacion === t ? 'selected' : ''}>${t}</option>`).join('')}
+                         </select>
+                    </div>
+                    <div>
+                        <label for="modal-huesped-numero-identificacion" class="block text-sm font-medium text-gray-700">Número Identificación</label>
+                         <input type="text" id="modal-huesped-numero-identificacion" name="huesped-numero-identificacion" required placeholder="Número de documento" value="${huesped ? huesped.numeroIdentificacion : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                     <!-- END NEW -->
+                    <div class="sm:col-span-2">
+                        <label for="modal-huesped-telefono" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <input type="tel" id="modal-huesped-telefono" name="huesped-telefono" placeholder="Ej: 3001234567" value="${huesped ? huesped.telefono || '' : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                `;
+                if (huesped) {
+                    const guestReservations = reservas.filter(r => r.idHuesped === huesped.id);
+                    if (guestReservations.length > 0) {
+                        formHtml += `<div class="sm:col-span-2 mt-4">
+                            <p class="text-sm font-medium text-gray-700">Historial de Reservas (IDs):</p>
+                            <ul class="list-disc list-inside text-sm text-gray-600 mt-1">
+                                ${guestReservations.map(r => {
+                                    const room = habitaciones.find(h => h.numero === r.numeroHabitacion);
+                                    return `<li>Reserva #${r.id} (Hab: ${r.numeroHabitacion || 'N/A'}, ${r.checkin || 'N/A'} - ${r.checkout || 'N/A'})</li>`;
+                                }).join('')}
+                            </ul>
+                        </div>`;
+                    } else {
+                         formHtml += `<div class="sm:col-span-2 mt-4"><p class="text-sm text-gray-500">Este huésped no tiene reservas registradas.</p></div>`;
+                    }
+                }
+            } else if (type === 'habitacion') {
+                const habitacion = id ? habitaciones.find(h => h.numero === id) : null;
+                title = id ? `Editar Habitación (Nº: ${id})` : 'Registrar Nueva Habitación';
+                const roomTypes = ["Individual", "Doble", "Suite", "Familiar", "Otro"];
+                const roomStatuses = ["Disponible", "Ocupada", "Needs Cleaning", "Maintenance"];
+                 // Adjust grid for fewer fields if needed, or keep 2 cols
+                 modalFormContent.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+
+                formHtml = `
+                    <div>
+                        <label for="modal-habitacion-numero" class="block text-sm font-medium text-gray-700">Número</label>
+                        <input type="text" id="modal-habitacion-numero" name="habitacion-numero" required placeholder="Ej: 101" value="${habitacion ? habitacion.numero : ''}" ${habitacion ? 'readonly class="bg-gray-100"' : ''} class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="modal-habitacion-tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
+                        <select id="modal-habitacion-tipo" name="habitacion-tipo" required class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Seleccione tipo...</option>
+                            ${roomTypes.map(t => `<option value="${t}" ${habitacion && habitacion.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="modal-habitacion-precio" class="block text-sm font-medium text-gray-700">Precio por Noche (COP)</label>
+                        <input type="number" id="modal-habitacion-precio" name="habitacion-precio" required min="0" step="any" placeholder="Ej: 75500.00" value="${habitacion ? habitacion.precio : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                     <div> <!-- Adjusted to one column for state -->
+                        <label for="modal-habitacion-estado" class="block text-sm font-medium text-gray-700">Estado</label>
+                        <select id="modal-habitacion-estado" name="habitacion-estado" required class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                             ${roomStatuses.map(s => `<option value="${s}" ${habitacion && habitacion.estado === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+                 if (habitacion) {
+                    const roomReservations = reservas.filter(r => r.numeroHabitacion === habitacion.numero);
+                     if (roomReservations.length > 0) {
+                         formHtml += `<div class="sm:col-span-2 mt-4">
+                             <p class="text-sm font-medium text-gray-700">Historial de Reservas (IDs):</p>
+                             <ul class="list-disc list-inside text-sm text-gray-600 mt-1">
+                                 ${roomReservations.map(r => `<li>Reserva #${r.id} (Huésped: ${huespedes.find(h => h.id === r.idHuesped)?.nombre || 'N/A'}, ${r.checkin || 'N/A'} - ${r.checkout || 'N/A'})</li>`).join('')}
+                             </ul>
+                         </div>`;
+                     } else {
+                          formHtml += `<div class="sm:col-span-2 mt-4"><p class="text-sm text-gray-500">Esta habitación no tiene reservas registradas.</p></div>`;
+                     }
+                 }
+
+            } else if (type === 'reserva') {
+                const reserva = id ? reservas.find(r => r.id === parseInt(id)) : null;
+                title = id ? `Editar Reserva (ID: ${id})` : 'Crear Nueva Reserva';
+
+                let huespedOptions = huespedes.map(h => `<option value="${h.id}" ${reserva && reserva.idHuesped === h.id ? 'selected' : ''}>${h.nombre} (ID: ${h.id})</option>`).join('');
+                // Only list truly available rooms OR the room this reservation is currently in if editing
+                let habitacionOptions = habitaciones.filter(hab => hab.estado === 'Disponible' || (reserva && hab.numero === reserva.numeroHabitacion) )
+                                            .map(hab => `<option value="${hab.numero}" ${reserva && reserva.numeroHabitacion === hab.numero ? 'selected' : ''}>Hab. ${hab.numero} (${hab.tipo})</option>`).join('');
+                 modalFormContent.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4'; // Keep 2 columns
+
+                formHtml = `
+                    <div>
+                        <label for="modal-reserva-huesped" class="block text-sm font-medium text-gray-700">Huésped</label>
+                        <select id="modal-reserva-huesped" name="reserva-huesped" required class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Seleccione un huésped...</option>
+                            ${huespedOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="modal-reserva-habitacion" class="block text-sm font-medium text-gray-700">Habitación</label>
+                        <select id="modal-reserva-habitacion" name="reserva-habitacion" required class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                             <option value="">Seleccione una habitación...</option>
+                             ${habitacionOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="modal-reserva-checkin" class="block text-sm font-medium text-gray-700">Check-in</label>
+                        <input type="date" id="modal-reserva-checkin" name="reserva-checkin" required value="${reserva ? reserva.checkin : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="modal-reserva-checkout" class="block text-sm font-medium text-gray-700">Check-out</label>
+                        <input type="date" id="modal-reserva-checkout" name="reserva-checkout" required value="${reserva ? reserva.checkout : ''}" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                     ${id ? `<div> <!-- Estado Pago only shown when editing -->
+                        <label for="modal-reserva-estado-pago" class="block text-sm font-medium text-gray-700">Estado Pago</label>
+                        <select id="modal-reserva-estado-pago" name="reserva-estado-pago" class="mt-1 block w-full rounded-md border-gray-300 bg-white text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="Pendiente" ${reserva && reserva.estadoPago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Pagado" ${reserva && reserva.estadoPago === 'Pagado' ? 'selected' : ''}>Pagado</option>
+                        </select>
+                    </div>` : ''}
+                `;
+            }
+
+            modalTitle.textContent = title;
+            modalFormContent.innerHTML = formHtml;
+            modalForm.dataset.type = type; // Store type for submission handler
+            genericModal.style.display = 'flex'; // Use flex to allow centering
+        }
+
+        function closeModal() {
+            genericModal.style.display = 'none';
+            modalForm.reset();
+            modalFormContent.innerHTML = ''; // Clear form content
+            editIdInput.value = '';
+        }
+
+        modalCloseButton.addEventListener('click', closeModal);
+        modalCancelButton.addEventListener('click', closeModal);
+        // Close modal on overlay click
+        genericModal.addEventListener('click', (e) => {
+            if (e.target === genericModal) {
+                closeModal();
+            }
+        });
+
+
+        // Render Guests Table
+        function renderHuespedes() {
+            tableHuespedesBody.innerHTML = '';
+
+            if (huespedes.length === 0) {
+                 tableHuespedesBody.innerHTML = `<tr><td colspan="7" class="text-center px-4 py-4 text-gray-500"> <!-- MODIFIED: Colspan -->
+                    No hay huéspedes registrados. <button onclick="openModal('huesped')" class="ml-2 text-blue-600 hover:underline">Agregar Huésped</button>
+                 </td></tr>`;
+                 return;
+            }
+
+            const sortedHuespedes = sortData(huespedes, 'huespedes');
+
+            sortedHuespedes.forEach(h => {
+                const row = `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${h.id}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${h.nombre}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${h.email}</td>
+                         <!-- NEW: Identification Cells -->
+                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${h.tipoIdentificacion || 'N/A'}</td>
+                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${h.numeroIdentificacion || 'N/A'}</td>
+                         <!-- END NEW -->
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${h.telefono || 'N/A'}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openModal('huesped', ${h.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-1"><i class="fas fa-edit"></i> <span class="hidden sm:inline ml-1">Editar</span></button>
+                            <button onclick="deleteHuesped(${h.id})" class="action-button text-red-600 hover:text-red-900 ml-1"><i class="fas fa-trash-alt"></i> <span class="hidden sm:inline ml-1">Eliminar</span></button>
+                        </td>
+                    </tr>
+                `;
+                tableHuespedesBody.innerHTML += row;
+            });
+             updateSortIcons('huespedes'); // Update icons after rendering
+        }
+
+         // Render Rooms Table
+        function renderHabitaciones() {
+            tableHabitacionesBody.innerHTML = '';
+
+            if (habitaciones.length === 0) {
+                 tableHabitacionesBody.innerHTML = `<tr><td colspan="5" class="text-center px-4 py-4 text-gray-500">
+                    No hay habitaciones registradas. <button onclick="openModal('habitacion')" class="ml-2 text-blue-600 hover:underline">Agregar Habitación</button>
+                 </td></tr>`;
+                 return;
+            }
+
+            const sortedHabitaciones = sortData(habitaciones, 'habitaciones');
+
+            sortedHabitaciones.forEach(hab => {
+                let estadoClass = 'text-gray-600';
+                let estadoIcon = 'fa-question-circle';
+                let badgeClass = 'badge-gray'; // Default/fallback
+                switch(hab.estado) {
+                    case 'Disponible': estadoClass = 'text-green-800'; estadoIcon = 'fa-check-circle'; badgeClass = 'badge-green'; break;
+                    case 'Ocupada': estadoClass = 'text-red-800'; estadoIcon = 'fa-door-closed'; badgeClass = 'badge-red'; break;
+                    case 'Needs Cleaning': estadoClass = 'text-yellow-800'; estadoIcon = 'fa-soap'; badgeClass = 'badge-yellow'; break;
+                    case 'Maintenance': estadoClass = 'text-purple-800'; estadoIcon = 'fa-tools'; badgeClass = 'badge-purple'; break;
+                     default: // Fallback for unknown status
+                         estadoClass = 'text-gray-600'; estadoIcon = 'fa-question-circle'; badgeClass = 'badge-gray'; break;
+                }
+
+                const row = `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${hab.numero}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${hab.tipo}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">COP $${hab.precio.toFixed(2)}</td> <!-- MODIFIED: Currency -->
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold">
+                            <span class="badge ${badgeClass}">
+                               <i class="fas ${estadoIcon} mr-1"></i>${hab.estado}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                             <button onclick="openModal('habitacion', '${hab.numero}')" class="action-button text-indigo-600 hover:text-indigo-900 mr-1"><i class="fas fa-edit"></i> <span class="hidden sm:inline ml-1">Editar</span></button>
+                             <button onclick="deleteHabitacion('${hab.numero}')" class="action-button text-red-600 hover:text-red-900 ml-1"><i class="fas fa-trash-alt"></i> <span class="hidden sm:inline ml-1">Eliminar</span></button>
+                        </td>
+                    </tr>
+                `;
+                tableHabitacionesBody.innerHTML += row;
+            });
+             updateSortIcons('habitaciones'); // Update icons after rendering
+        }
+
+        function renderReservas() {
+            tableReservasBody.innerHTML = '';
+            const filterStart = filterStartDateInput.value;
+            const filterEnd = filterEndDateInput.value;
+
+            let filteredReservas = reservas.filter(res => {
+                if (!res.checkin || !res.checkout) return false;
+                if (!filterStart && !filterEnd) return true; // No filter applied
+
+                const checkin = new Date(res.checkin);
+                const checkout = new Date(res.checkout);
+
+                if (isNaN(checkin) || isNaN(checkout)) return false;
+
+                // Filter logic: Reservation overlaps with the filter range
+                // Does NOT overlap if reservation ends before filter starts OR reservation starts after filter ends
+                const filterStartObj = filterStart ? new Date(filterStart) : null;
+                const filterEndObj = filterEnd ? new Date(filterEnd) : null;
+
+                 let overlaps = true;
+                 if (filterStartObj && checkout <= filterStartObj) overlaps = false; // Reservation ends before filter start
+                 if (filterEndObj && checkin >= filterEndObj) overlaps = false; // Reservation starts after filter end
+
+                 return overlaps;
+            });
+
+            if (filteredReservas.length === 0) {
+                 const message = (filterStart || filterEnd) ? "No hay reservas que coincidan con el filtro." : "No hay reservas registradas.";
+                 tableReservasBody.innerHTML = `<tr><td colspan="9" class="text-center px-4 py-4 text-gray-500"> <!-- MODIFIED: Colspan -->
+                    ${message} ${!(filterStart || filterEnd) ? `<button onclick="openModal('reserva')" class="ml-2 text-blue-600 hover:underline">Crear Reserva</button>` : ''}
+                 </td></tr>`;
+                 return;
+            }
+
+            const sortedReservas = sortData(filteredReservas, 'reservas');
+
+            sortedReservas.forEach(res => {
+                 const huesped = huespedes.find(h => h.id === res.idHuesped);
+                 const habitacion = habitaciones.find(hab => hab.numero === res.numeroHabitacion);
+                 const noches = calculateNights(res.checkin, res.checkout);
+
+                 let totalPagar = 0;
+                 let totalPagarFormatted = 'N/A';
+                 if (habitacion && habitacion.precio !== undefined && noches > 0) {
+                     totalPagar = noches * habitacion.precio;
+                     totalPagarFormatted = `COP $${totalPagar.toFixed(2)}`; // MODIFIED: Currency
+                 }
+
+                 const estadoPago = res.estadoPago || 'Pendiente';
+                 const badgeClass = estadoPago === 'Pagado' ? 'badge-green' : 'badge-yellow'; // Use yellow for pendiente
+                 const estadoPagoIcon = estadoPago === 'Pagado' ? 'fa-check-circle' : 'fa-clock';
+                 const togglePagoButtonText = estadoPago === 'Pagado' ? 'Marcar Pendiente' : 'Marcar Pagado';
+                 const togglePagoButtonClass = estadoPago === 'Pagado' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900';
+                 const togglePagoIcon = estadoPago === 'Pagado' ? 'fa-times-circle' : 'fa-dollar-sign';
+                 const totalPagarStyleClasses = estadoPago === 'Pagado' ? 'text-gray-400 line-through' : 'text-gray-900 font-medium';
+
+                 const row = `
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${res.id}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${huesped ? huesped.nombre : 'N/A'}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${habitacion ? `Hab. ${habitacion.numero} (${habitacion.tipo || 'N/A'})` : 'N/A'}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${res.checkin}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${res.checkout}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">${noches}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm ${totalPagarStyleClasses}">${totalPagarFormatted}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <span class="badge ${badgeClass}">
+                                <i class="fas ${estadoPagoIcon} mr-1"></i>${estadoPago}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openModal('reserva', ${res.id})" class="action-button text-indigo-600 hover:text-indigo-900 mr-1"> <i class="fas fa-edit"></i> <span class="hidden sm:inline ml-1">Editar</span></button>
+                            <button onclick="toggleEstadoPago(${res.id})" class="action-button ${togglePagoButtonClass} mr-1">
+                                <i class="fas ${togglePagoIcon}"></i> <span class="hidden sm:inline ml-1">${togglePagoButtonText}</span>
+                            </button>
+                            <button onclick="deleteReserva(${res.id})" class="action-button text-red-600 hover:text-red-900 ml-1">
+                                <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline ml-1">Cancelar</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableReservasBody.innerHTML += row;
+            });
+             updateSortIcons('reservas'); // Update icons after rendering
+        }
+
+
+        function isRoomAvailable(numeroHabitacion, checkinStr, checkoutStr, anExclusionReservaId = null) {
+             const room = habitaciones.find(h => h.numero === numeroHabitacion);
+             if (!room) {
+                 console.warn(`Habitación con número ${numeroHabitacion} no encontrada.`);
+                 return false; // Cannot book a non-existent room
+             }
+
+            const newCheckin = new Date(checkinStr + 'T00:00:00'); // Use T00:00:00 to avoid timezone issues changing the date
+            const newCheckout = new Date(checkoutStr + 'T00:00:00');
+            if (isNaN(newCheckin) || isNaN(newCheckout) || newCheckout <= newCheckin) return false;
+
+            // Check for date overlaps with existing reservations
+            for (const res of reservas) {
+                if (anExclusionReservaId && res.id === anExclusionReservaId) continue; // Exclude the reservation being edited
+
+                if (res.numeroHabitacion === numeroHabitacion) {
+                     const existingCheckin = new Date(res.checkin + 'T00:00:00');
+                     const existingCheckout = new Date(res.checkout + 'T00:00:00');
+                    if (isNaN(existingCheckin) || isNaN(existingCheckout)) continue;
+
+                    // Check for overlap: (StartA < EndB) && (EndA > StartB)
+                    if (newCheckin < existingCheckout && newCheckout > existingCheckin) {
+                         console.log(`Overlap found for room ${numeroHabitacion} with reservation ${res.id} (${res.checkin} to ${res.checkout})`);
+                        return false; // Overlap detected
+                    }
+                }
+            }
+
+            // Check the general room status
+            // Allow booking if it's available, OR if it's the room currently booked by the reservation being edited.
+            if (room.estado === 'Disponible') {
+                return true;
+            } else if (anExclusionReservaId) {
+                 const currentReserva = reservas.find(r => r.id === anExclusionReservaId);
+                 if (currentReserva && currentReserva.numeroHabitacion === numeroHabitacion) {
+                     // If editing a reservation, and the room hasn't changed, allow it even if the room status isn't 'Disponible'.
+                     // The room status should be updated AFTER a reservation is confirmed/edited/deleted.
+                     return true;
+                 }
+            }
+            // If not Available and not the room of the reservation being edited
+            return false;
+        }
+
+
+        // --- Event Listeners ---
+
+        // Modal Form Submission (handles add/edit for all types)
+        modalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = modalForm.dataset.type;
+            const idToEdit = editIdInput.value;
+
+            if (type === 'huesped') {
+                const nombre = document.getElementById('modal-huesped-nombre').value.trim();
+                const email = document.getElementById('modal-huesped-email').value.trim();
+                const telefono = document.getElementById('modal-huesped-telefono').value.trim();
+                // NEW: Read identification fields
+                const tipoIdentificacion = document.getElementById('modal-huesped-tipo-identificacion').value;
+                const numeroIdentificacion = document.getElementById('modal-huesped-numero-identificacion').value.trim();
+
+                // MODIFIED: Added validation for new fields
+                if (!nombre || !email || !tipoIdentificacion || !numeroIdentificacion) {
+                    showMessage('Por favor, complete los campos obligatorios (Nombre, Email, Tipo y Número de Identificación).', 'error'); return;
+                }
+
+                if (idToEdit) { // Editing existing huesped
+                    const huespedIndex = huespedes.findIndex(h => h.id === parseInt(idToEdit));
+                    if (huespedIndex !== -1) {
+                        // Optional: Check for duplicate email/ID number if desired, excluding the current one
+                        // if (huespedes.some(h => h.email === email && h.id !== parseInt(idToEdit))) { showMessage('Ya existe otro huésped con ese correo electrónico.', 'error'); return; }
+                        // if (huespedes.some(h => h.numeroIdentificacion === numeroIdentificacion && h.id !== parseInt(idToEdit))) { showMessage('Ya existe otro huésped con ese número de identificación.', 'error'); return; }
+
+                        // MODIFIED: Include new fields in update
+                        huespedes[huespedIndex] = { ...huespedes[huespedIndex], nombre, email, telefono, tipoIdentificacion, numeroIdentificacion };
+                        showMessage('Huésped actualizado exitosamente.');
+                    } else {
+                         showMessage('Error: Huésped no encontrado para editar.', 'error');
+                    }
+                } else { // Adding new huesped
+                    // Optional: Check for duplicate email/ID number if desired
+                    // if (huespedes.some(h => h.email === email)) { showMessage('Ya existe un huésped con ese correo electrónico.', 'error'); return; }
+                     if (huespedes.some(h => h.tipoIdentificacion === tipoIdentificacion && h.numeroIdentificacion === numeroIdentificacion)) {
+                        showMessage('Ya existe un huésped con ese tipo y número de identificación.', 'error'); return;
+                    }
+
+                    // MODIFIED: Include new fields in new object
+                    const newHuesped = { id: nextHuespedId++, nombre, email, telefono, tipoIdentificacion, numeroIdentificacion };
+                    huespedes.push(newHuesped);
+                    showMessage('Huésped agregado exitosamente.');
+                }
+                renderHuespedes();
+            } else if (type === 'habitacion') {
+                const numero = document.getElementById('modal-habitacion-numero').value.trim();
+                const tipo = document.getElementById('modal-habitacion-tipo').value;
+                const precio = parseFloat(document.getElementById('modal-habitacion-precio').value);
+                const estado = document.getElementById('modal-habitacion-estado').value;
+
+                if (!numero || !tipo || isNaN(precio) || precio < 0 || !estado) {
+                    showMessage('Por favor, complete todos los campos de la habitación correctamente.', 'error'); return;
+                }
+
+                if (idToEdit) { // Editing existing habitacion
+                    const habitacionIndex = habitaciones.findIndex(h => h.numero === idToEdit);
+                    if (habitacionIndex !== -1) {
+                        habitaciones[habitacionIndex] = { ...habitaciones[habitacionIndex], tipo, precio, estado };
+                        showMessage('Habitación actualizada exitosamente.');
+                    } else {
+                         showMessage('Error: Habitación no encontrada para editar.', 'error');
+                    }
+                } else { // Adding new habitacion
+                     if (habitaciones.some(hab => hab.numero === numero)) {
+                        showMessage('Ya existe una habitación con ese número.', 'error'); return;
+                    }
+                    const newHabitacion = { numero, tipo, precio, estado };
+                    habitaciones.push(newHabitacion);
+                    showMessage('Habitación agregada exitosamente.');
+                }
+                renderHabitaciones();
+                renderReservas(); // Room price/status might affect reservation view
+            } else if (type === 'reserva') {
+                const idHuesped = parseInt(document.getElementById('modal-reserva-huesped').value);
+                const numeroHabitacion = document.getElementById('modal-reserva-habitacion').value;
+                const checkin = document.getElementById('modal-reserva-checkin').value;
+                const checkout = document.getElementById('modal-reserva-checkout').value;
+                const estadoPago = idToEdit ? document.getElementById('modal-reserva-estado-pago').value : 'Pendiente';
+
+
+                if (!idHuesped || !numeroHabitacion || !checkin || !checkout) {
+                    showMessage('Por favor, complete todos los campos obligatorios de la reserva.', 'error'); return;
+                }
+                if (new Date(checkout) <= new Date(checkin)) {
+                    showMessage('La fecha de check-out debe ser posterior a la fecha de check-in.', 'error'); return;
+                }
+
+                const exclusionId = idToEdit ? parseInt(idToEdit) : null;
+                if (!isRoomAvailable(numeroHabitacion, checkin, checkout, exclusionId)) {
+                     // MODIFIED: Include room status info in error message
+                     const room = habitaciones.find(h => h.numero === numeroHabitacion);
+                     const statusMsg = room ? ` (Estado: ${room.estado})` : '';
+                     showMessage(`La habitación ${numeroHabitacion} no está disponible para las fechas seleccionadas${statusMsg}.`, 'error');
+                     return;
+                }
+
+                let oldRoomNumber = null; // Track old room for status update
+                if (idToEdit) { // Editing reserva
+                    const reservaIndex = reservas.findIndex(r => r.id === parseInt(idToEdit));
+                    if (reservaIndex !== -1) {
+                         oldRoomNumber = reservas[reservaIndex].numeroHabitacion; // Save old room
+                        reservas[reservaIndex] = { ...reservas[reservaIndex], idHuesped, numeroHabitacion, checkin, checkout, estadoPago };
+                        showMessage('Reserva actualizada exitosamente.');
+                    } else {
+                         showMessage('Error: Reserva no encontrada para editar.', 'error');
+                    }
+                } else { // Adding new reserva
+                    const newReserva = { id: nextReservaId++, idHuesped, numeroHabitacion, checkin, checkout, estadoPago };
+                    reservas.push(newReserva);
+                    showMessage('Reserva creada exitosamente.');
+                }
+
+                // Update status of the relevant rooms
+                if (oldRoomNumber && oldRoomNumber !== numeroHabitacion) {
+                    updateRoomStatusAfterReservationChange(oldRoomNumber); // Update old room
+                }
+                updateRoomStatusAfterReservationChange(numeroHabitacion); // Update (new) booked room
+
+                renderReservas();
+                renderHabitaciones(); // Room status changes need UI update
+            }
+            saveDataToLocalStorage();
+            closeModal();
+        });
+
+        // Buttons to open modals listeners
+        btnOpenAddHuespedModal.addEventListener('click', () => openModal('huesped'));
+        btnOpenAddHabitacionModal.addEventListener('click', () => openModal('habitacion'));
+        btnOpenAddReservaModal.addEventListener('click', () => {
+             if (huespedes.length === 0) {
+                 showMessage('Necesita registrar huéspedes antes de crear una reserva.', 'error');
+                 return;
+             }
+             if (habitaciones.length === 0) {
+                 showMessage('Necesita registrar habitaciones antes de crear una reserva.', 'error');
+                 return;
+             }
+             openModal('reserva');
+        });
+
+
+        // --- Modify/Delete Functions ---
+        function toggleEstadoPago(id) {
+            const reservaIndex = reservas.findIndex(res => res.id === id);
+            if (reservaIndex !== -1) {
+                const currentStatus = reservas[reservaIndex].estadoPago || 'Pendiente';
+                reservas[reservaIndex].estadoPago = currentStatus === 'Pendiente' ? 'Pagado' : 'Pendiente';
+                saveDataToLocalStorage();
+                renderReservas();
+                showMessage(`Estado de pago de la reserva ${id} actualizado a "${reservas[reservaIndex].estadoPago}".`);
+            } else { showMessage(`No se encontró la reserva con ID ${id}.`, 'error'); }
+        }
+
+        function deleteHuesped(id) {
+            if (reservas.some(res => res.idHuesped === id)) {
+                 showMessage(`No se puede eliminar el huésped con ID ${id} porque tiene reservas activas o pasadas. Cancele o elimine las reservas asociadas primero.`, 'error'); return;
+             }
+            if (confirm(`¿Eliminar huésped con ID ${id}? Esta acción es irreversible.`)) {
+                 huespedes = huespedes.filter(h => h.id !== id);
+                saveDataToLocalStorage();
+                renderHuespedes();
+                // No need to re-render reservations if we already checked there are none
+                showMessage(`Huésped con ID ${id} eliminado.`);
+            }
+        }
+
+        function deleteHabitacion(numero) {
+             if (reservas.some(res => res.numeroHabitacion === numero)) {
+                 showMessage(`No se puede eliminar la habitación ${numero} porque tiene reservas activas o pasadas. Cancele o elimine las reservas asociadas primero.`, 'error'); return;
+             }
+            if (confirm(`¿Eliminar habitación número ${numero}? Esta acción es irreversible.`)) {
+                habitaciones = habitaciones.filter(hab => hab.numero !== numero);
+                saveDataToLocalStorage();
+                renderHabitaciones();
+                // No need to re-render reservations if we already checked there are none
+                showMessage(`Habitación ${numero} eliminada.`);
+            }
+        }
+
+        function deleteReserva(id) {
+             if (confirm(`¿Cancelar la reserva con ID ${id}? Esta acción es irreversible.`)) {
+                const reservaIndex = reservas.findIndex(res => res.id === id);
+                if (reservaIndex !== -1) {
+                    const numeroHabitacion = reservas[reservaIndex].numeroHabitacion;
+                    reservas.splice(reservaIndex, 1);
+                    saveDataToLocalStorage();
+                    updateRoomStatusAfterReservationChange(numeroHabitacion); // Update room status
+                    renderReservas();
+                    renderHabitaciones(); // Room status changes need UI update
+                    showMessage(`Reserva con ID ${id} cancelada.`);
+                } else {
+                     showMessage(`Error: No se encontró la reserva con ID ${id}.`, 'error');
+                }
+            }
+        }
+        // Helper to update room status based on current reservations
+        function updateRoomStatusAfterReservationChange(numeroHabitacion) {
+            const habitacion = habitaciones.find(hab => hab.numero === numeroHabitacion);
+            if (!habitacion) {
+                 console.warn(`updateRoomStatusAfterReservationChange: Habitación ${numeroHabitacion} no encontrada.`);
+                 return; // Room might have been deleted
+            }
+
+            // Check if there are any ongoing reservations for this room *right now*
+            const today = new Date();
+             // Need to adjust today to be comparable to the checkin/checkout dates without time component influencing the check
+             const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+            const isCurrentlyOccupied = reservas.some(res => {
+                if (res.numeroHabitacion !== numeroHabitacion) return false;
+                 const checkinUTC = Date.UTC(new Date(res.checkin).getFullYear(), new Date(res.checkin).getMonth(), new Date(res.checkin).getDate());
+                 const checkoutUTC = Date.UTC(new Date(res.checkout).getFullYear(), new Date(res.checkout).getMonth(), new Date(res.checkout).getDate());
+                 // Check if today is strictly after checkin and before or on checkout
+                 return todayUTC >= checkinUTC && todayUTC < checkoutUTC;
+            });
+
+             // Check if there are any *future* reservations for this room
+             const hasFutureBookings = reservas.some(res => {
+                 if (res.numeroHabitacion !== numeroHabitacion) return false;
+                  const checkinUTC = Date.UTC(new Date(res.checkin).getFullYear(), new Date(res.checkin).getMonth(), new Date(res.checkin).getDate());
+                 return checkinUTC >= todayUTC; // Booking starts today or later
+             });
+
+
+            if (isCurrentlyOccupied) {
+                // If occupied, status *must* be 'Ocupada', unless it was manually set to Maintenance
+                // We should not override 'Maintenance' automatically if the hotel wants manual control
+                if (habitacion.estado !== 'Maintenance') {
+                     habitacion.estado = 'Ocupada';
+                     console.log(`Room ${numeroHabitacion} status set to Ocupada due to active reservation.`);
+                } else {
+                     console.log(`Room ${numeroHabitacion} is Ocupada but status is Maintenance (manual override).`);
+                }
+            } else {
+                // If not currently occupied, but *was* Ocupada, it should transition to 'Needs Cleaning'.
+                // If it was already 'Needs Cleaning', 'Maintenance', or 'Disponible', leave it.
+                if (habitacion.estado === 'Ocupada') {
+                     habitacion.estado = 'Needs Cleaning'; // Standard transition after checkout
+                     console.log(`Room ${numeroHabitacion} status set to Needs Cleaning after checkout.`);
+                } else if (!['Needs Cleaning', 'Maintenance', 'Disponible'].includes(habitacion.estado)){
+                     // Fallback for unexpected states
+                     habitacion.estado = hasFutureBookings ? 'Needs Cleaning' : 'Disponible'; // Infer based on future bookings
+                     console.log(`Room ${numeroHabitacion} status inferred to ${habitacion.estado}.`);
+                } else {
+                     console.log(`Room ${numeroHabitacion} status remains ${habitacion.estado}.`);
+                }
+            }
+
+            saveDataToLocalStorage(); // Save the updated room status
+        }
+
+
+        // --- Report Download Functionality ---
+        function escapeCsvData(data) {
+             if (data === null || data === undefined) return '';
+             const str = String(data);
+             // Escape double quotes by doubling them, then wrap field in double quotes if it contains
+             // comma, double quote, or newline.
+             const needsQuotes = str.includes(',') || str.includes('"') || str.includes('\n') || str.includes(';'); // Also check for semicolon often used in some CSV variants
+             const escapedStr = str.replace(/"/g, '""');
+             return needsQuotes ? `"${escapedStr}"` : escapedStr;
+        }
+
+        function downloadCSV(csvContent, filename) {
+             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+             const link = document.createElement("a");
+             if (link.download !== undefined) { // Feature detection for download attribute
+                 const url = URL.createObjectURL(blob);
+                 link.setAttribute("href", url);
+                 link.setAttribute("download", filename);
+                 link.style.visibility = 'hidden'; // Hide the link
+                 document.body.appendChild(link); // Required for Firefox
+                 link.click(); // Simulate click
+                 document.body.removeChild(link); // Clean up
+                 URL.revokeObjectURL(url); // Free up memory
+             } else {
+                 showMessage("La descarga de archivos no es compatible con este navegador.", "error");
+             }
+        }
+
+        if (btnDownloadReport) {
+             btnDownloadReport.addEventListener('click', () => {
+                 const selectedMonth = inputReporteMes.value;
+                 if (!selectedMonth) {
+                     showMessage("Por favor, seleccione un mes y año para el reporte.", "error");
+                     return;
+                 }
+                 const [year, month] = selectedMonth.split('-').map(Number);
+                 // Create dates for the start and end of the selected month (UTC to avoid timezone issues)
+                 const startDate = new Date(Date.UTC(year, month - 1, 1)); // month - 1 because months are 0-indexed
+                 const endDate = new Date(Date.UTC(year, month, 1)); // Start of the *next* month
+
+                 // Filter reservations that have *any* overlap with the selected month
+                 const reservationsInMonth = reservas.filter(res => {
+                     const checkin = new Date(res.checkin + 'T00:00:00Z'); // Treat dates as UTC start-of-day
+                     const checkout = new Date(res.checkout + 'T00:00:00Z');
+
+                     if (isNaN(checkin) || isNaN(checkout)) return false;
+
+                     // Check for overlap: (Reservation starts before next month) && (Reservation ends after start of this month)
+                     return checkin < endDate && checkout > startDate;
+                 });
+
+                 if (reservationsInMonth.length === 0) {
+                     showMessage(`No se encontraron reservas que se solapen con ${selectedMonth}.`, 'error');
+                     return;
+                 }
+
+                 // MODIFIED: Added new guest fields and clarified currency
+                 const headers = [
+                     "ID Reserva", "ID Huesped", "Nombre Huésped", "Email Huésped", "Tipo Identificación Huésped", "Número Identificación Huésped", "Teléfono Huésped",
+                     "Número Habitación", "Tipo Habitación", "Precio/Noche (COP)",
+                     "Check-in", "Check-out", "Noches", "Total Pagar (COP)", "Estado Pago"
+                 ];
+
+                 let csvRows = [headers.map(escapeCsvData).join(';')]; // Use semicolon as delimiter, common in some regions
+
+                 reservationsInMonth.forEach(res => {
+                     const huesped = huespedes.find(h => h.id === res.idHuesped) || {};
+                     const habitacion = habitaciones.find(hab => hab.numero === res.numeroHabitacion) || {};
+                     const noches = calculateNights(res.checkin, res.checkout);
+
+                     let totalPagar = 0;
+                     if (habitacion && habitacion.precio !== undefined && noches > 0) {
+                         totalPagar = noches * habitacion.precio;
+                     }
+
+                     const estadoPago = res.estadoPago || 'Pendiente';
+
+                     const rowData = [
+                         res.id,
+                         huesped.id || 'N/A', // Include guest ID
+                         huesped.nombre || 'N/A',
+                         huesped.email || 'N/A',
+                         huesped.tipoIdentificacion || 'N/A', // NEW
+                         huesped.numeroIdentificacion || 'N/A', // NEW
+                         huesped.telefono || 'N/A', // Included phone
+                         res.numeroHabitacion || 'N/A',
+                         habitacion.tipo || 'N/A',
+                         habitacion.precio !== undefined ? habitacion.precio.toFixed(2) : 'N/A', // Keep price as number string for CSV
+                         res.checkin || 'N/A',
+                         res.checkout || 'N/A',
+                         noches,
+                         totalPagar.toFixed(2), // Keep total as number string for CSV
+                         estadoPago
+                     ];
+                     csvRows.push(rowData.map(escapeCsvData).join(';')); // Use semicolon
+                 });
+
+                 const csvString = "\uFEFF" + csvRows.join('\n'); // Add BOM for UTF-8 compatibility in Excel
+                 const filename = `reporte_reservas_${selectedMonth}.csv`;
+                 downloadCSV(csvString, filename);
+                 showMessage(`Reporte para ${selectedMonth} descargado.`);
+             });
+        }
+
+        // --- Filter Reservations Functionality ---
+        if (btnFilterReservas) btnFilterReservas.addEventListener('click', renderReservas);
+        if (btnClearFilterReservas) { btnClearFilterReservas.addEventListener('click', () => { filterStartDateInput.value = ''; filterEndDateInput.value = ''; renderReservas(); }); }
+
+        // --- Clear All Data Functionality ---
+        if (btnClearAllData) {
+             btnClearAllData.addEventListener('click', () => {
+                 if (confirm("ADVERTENCIA: ¿Está COMPLETAMENTE SEGURO de que desea borrar TODOS los datos del hotel?\n\nEsta acción NO SE PUEDE DESHACER.")) {
+                     if(confirm("SEGUNDA CONFIRMACIÓN: ¿Realmente desea proceder con el borrado PERMANENTE de todos los datos?")) {
+                         try {
+                             // MODIFIED: Use new v4 keys
+                             localStorage.removeItem(HUESPEDES_KEY);
+                             localStorage.removeItem(HABITACIONES_KEY);
+                             localStorage.removeItem(RESERVAS_KEY);
+                             localStorage.removeItem(NEXT_HUESPED_ID_KEY);
+                             localStorage.removeItem(NEXT_RESERVA_ID_KEY);
+
+                             // Reset in-memory data
+                             huespedes = [];
+                             habitaciones = [];
+                             reservas = [];
+                             nextHuespedId = 1;
+                             nextReservaId = 1001;
+
+                             // Re-render tables
+                             renderHuespedes();
+                             renderHabitaciones();
+                             renderReservas();
+
+                             showMessage("Todos los datos del hotel han sido borrados.", "success");
+                         } catch (error) {
+                             console.error("Error clearing data:", error);
+                             showMessage("Ocurrió un error al borrar los datos.", "error");
+                         }
+                     } else {
+                         showMessage("Borrado cancelado.", "info"); // Use info type for cancel
+                     }
+                 } else {
+                      showMessage("Borrado cancelado.", "info"); // Use info type for cancel
+                 }
+             });
+        }
+
+
+        // Sorting Logic
+        function sortData(dataArray, type) {
+            if (!currentSort.column) return dataArray; // No sort applied
+
+             // Find the correct comparison function
+            const compare = (a, b) => {
+                let valA, valB;
+                const col = currentSort.column;
+
+                if (type === 'reservas') {
+                    const huespedA = huespedes.find(h => h.id === a.idHuesped);
+                    const huespedB = huespedes.find(h => h.id === b.idHuesped);
+                    const habitacionA = habitaciones.find(hab => hab.numero === a.numeroHabitacion);
+                    const habitacionB = habitaciones.find(hab => hab.numero === b.numeroHabitacion);
+                    const nochesA = calculateNights(a.checkin, a.checkout);
+                    const nochesB = calculateNights(b.checkin, b.checkout);
+                    const totalA = habitacionA ? nochesA * habitacionA.precio : 0;
+                    const totalB = habitacionB ? nochesB * habitacionB.precio : 0;
+
+                    switch (col) {
+                        case 'id': valA = a.id; valB = b.id; break;
+                        case 'huesped': valA = huespedA ? huespedA.nombre.toLowerCase() : ''; valB = huespedB ? huespedB.nombre.toLowerCase() : ''; break;
+                        case 'habitacion': valA = a.numeroHabitacion || ''; valB = b.numeroHabitacion || ''; break; // Treat missing as empty string
+                        case 'checkin': valA = new Date(a.checkin); valB = new Date(b.checkin); break;
+                        case 'checkout': valA = new Date(a.checkout); valB = new Date(b.checkout); break;
+                        case 'total': valA = totalA; valB = totalB; break;
+                        case 'pago': valA = (a.estadoPago || 'Pendiente').toLowerCase(); valB = (b.estadoPago || 'Pendiente').toLowerCase(); break;
+                        default: return 0; // Should not happen with valid data-sort
+                    }
+                } else if (type === 'habitaciones') {
+                     switch (col) {
+                        case 'numero': valA = a.numero || ''; valB = b.numero || ''; break;
+                        case 'tipo': valA = (a.tipo || '').toLowerCase(); valB = (b.tipo || '').toLowerCase(); break;
+                        case 'precio': valA = a.precio; valB = b.precio; break;
+                        case 'estado': valA = (a.estado || '').toLowerCase(); valB = (b.estado || '').toLowerCase(); break;
+                        default: return 0;
+                    }
+                } else if (type === 'huespedes') {
+                    switch (col) {
+                        case 'id': valA = a.id; valB = b.id; break;
+                        case 'nombre': valA = (a.nombre || '').toLowerCase(); valB = (b.nombre || '').toLowerCase(); break;
+                        case 'email': valA = (a.email || '').toLowerCase(); valB = (b.email || '').toLowerCase(); break;
+                         // NEW: Compare identification fields
+                        case 'tipoIdentificacion': valA = (a.tipoIdentificacion || '').toLowerCase(); valB = (b.tipoIdentificacion || '').toLowerCase(); break;
+                        case 'numeroIdentificacion': valA = (a.numeroIdentificacion || '').toLowerCase(); valB = (b.numeroIdentificacion || '').toLowerCase(); break;
+                        default: return 0;
+                    }
+                } else { return 0; /* Unknown type */ }
+
+                // Handle specific comparisons
+                if (col === 'numero' && type === 'habitaciones') {
+                     // Use localeCompare with numeric option for alphanumeric room numbers
+                     return valA.localeCompare(valB, undefined, {numeric: true}) * (currentSort.direction === 'asc' ? 1 : -1);
+                } else if (col === 'checkin' || col === 'checkout') {
+                    // Handle Date objects
+                     if (isNaN(valA) && isNaN(valB)) return 0;
+                     if (isNaN(valA)) return currentSort.direction === 'asc' ? 1 : -1; // null/invalid dates last
+                     if (isNaN(valB)) return currentSort.direction === 'asc' ? -1 : 1;
+                     return (valA - valB) * (currentSort.direction === 'asc' ? 1 : -1);
+                } else if (typeof valA === 'string') {
+                     // String comparison
+                     return valA.localeCompare(valB) * (currentSort.direction === 'asc' ? 1 : -1);
+                } else {
+                    // Numeric or other comparison
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+            };
+
+            return [...dataArray].sort(compare);
+        }
+
+        function handleSort(event, tableType) {
+            const th = event.target.closest('th.sortable');
+            if (!th) return; // Not a sortable header or click wasn't directly on TH
+
+            const column = th.dataset.sort;
+            if (!column) return;
+
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // Re-render the appropriate table to show sorted data and update icons
+            if (tableType === 'reservas') renderReservas();
+            else if (tableType === 'habitaciones') renderHabitaciones();
+            else if (tableType === 'huespedes') renderHuespedes();
+             // updateSortIcons is called at the end of each render function now
+        }
+
+        function updateSortIcons(tableType) {
+            const tableId = `content-${tableType}`;
+            document.querySelectorAll(`#${tableId} th.sortable`).forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                 if (icon) {
+                     icon.className = 'sort-icon fas fa-sort'; // Reset all icons
+                     th.classList.remove('sorted'); // Remove sorted class
+                 }
+            });
+
+            if (currentSort.column) {
+                const activeTh = document.querySelector(`#${tableId} th[data-sort="${currentSort.column}"]`);
+                if (activeTh) {
+                    const activeIcon = activeTh.querySelector('.sort-icon');
+                    if (activeIcon) {
+                         activeIcon.className = `sort-icon fas ${currentSort.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down'}`;
+                         activeTh.classList.add('sorted'); // Add sorted class for potential styling
+                    }
+                }
+            }
+        }
+
+        // Add sort listeners - Delegate from the table body or content area
+        document.querySelectorAll('.tab-content thead').forEach(thead => {
+            const tableType = thead.closest('.tab-content').id.replace('content-', '');
+            thead.addEventListener('click', (e) => handleSort(e, tableType));
+        });
+
+
+        // --- Initial Load and Render ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDataFromLocalStorage();
+            renderHuespedes();
+            renderHabitaciones();
+            renderReservas();
+            // Determine which tab was active last, or default to 'reservas'
+             const lastActiveTab = localStorage.getItem('lastActiveTab') || 'reservas';
+            showTab(lastActiveTab); // Show the last active tab
+
+            // Save active tab on tab click
+            tabButtons.forEach(button => {
+                 button.addEventListener('click', () => {
+                     const tabId = button.id.replace('tab-', '');
+                     localStorage.setItem('lastActiveTab', tabId);
+                 });
+            });
+
+
+            // Set default month for report to current month
+            const today = new Date();
+            const currentMonth = today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2);
+            if (inputReporteMes) inputReporteMes.value = currentMonth;
+
+             // Initial update of sort icons for the currently visible tab
+             updateSortIcons(lastActiveTab);
+
+             console.log("App initialized");
+        });
+    </script>
+</body>
+</html>
