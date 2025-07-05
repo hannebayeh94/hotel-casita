@@ -62,162 +62,188 @@
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center">
         <div class="loader"></div>
-        <p class="mt-4 text-gray-600 font-semibold">Conectando con la base de datos...</p>
+        <p class="mt-4 text-gray-600 font-semibold">Conectando...</p>
     </div>
 
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <h1 class="text-xl sm:text-2xl font-bold text-blue-600">Hotel y Restaurante Mi Casita B&V</h1>
-                <div id="current-time" class="text-sm text-gray-500 hidden sm:block"></div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="bg-white shadow-sm">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex border-b border-gray-200">
-                <button data-tab="reservas" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none tab-active">Reservas</button>
-                <button data-tab="habitaciones" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Habitaciones</button>
-                <button data-tab="huespedes" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Huéspedes</button>
-                <button data-tab="reportes" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Reportes</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Reservas Section -->
-        <div id="reservas-section" class="tab-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-gray-700">Gestión de Reservas</h2>
-                <button id="add-reservation-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    <span>Nueva Reserva</span>
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-40 hidden items-center justify-center bg-gray-100">
+        <div class="w-full max-w-sm p-8 bg-white rounded-lg shadow-xl">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Bienvenido</h2>
+            <p class="text-center text-gray-500 mb-6">Inicia sesión para administrar el hotel</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                    <input type="email" id="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">
+                    Iniciar Sesión
                 </button>
-            </div>
-            <!-- Reservation Sub-tabs -->
-            <div class="mb-6">
-                <div class="bg-gray-200 rounded-lg p-1 flex w-full sm:w-auto">
-                    <button data-subtab="activas" class="sub-tab-btn w-full text-center px-4 py-2 rounded-md text-sm font-semibold sub-tab-active">Activas y Próximas</button>
-                    <button data-subtab="completadas" class="sub-tab-btn w-full text-center px-4 py-2 rounded-md text-sm font-semibold">Completadas</button>
-                </div>
-            </div>
-
-            <!-- Active Reservations Table -->
-            <div id="activas-subcontent" class="sub-tab-content bg-white p-6 rounded-lg shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-max text-left">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-4">Habitación</th>
-                                <th class="p-4">Huésped</th>
-                                <th class="p-4">Check-in/Out</th>
-                                <th class="p-4">Total</th>
-                                <th class="p-4">Pagado</th>
-                                <th class="p-4">Saldo</th>
-                                <th class="p-4 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reservations-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Completed Reservations Table -->
-            <div id="completadas-subcontent" class="sub-tab-content hidden bg-white p-6 rounded-lg shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-max text-left">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-4">Habitación</th>
-                                <th class="p-4">Huésped</th>
-                                <th class="p-4">Check-in/Out</th>
-                                <th class="p-4">Total Pagado</th>
-                                <th class="p-4 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="completed-reservations-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Habitaciones Section -->
-        <div id="habitaciones-section" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-700">Gestión de Habitaciones</h2>
-                <button id="add-room-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    <span>Nueva Habitación</span>
-                </button>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-max text-left">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-4">Número</th>
-                                <th class="p-4">Tipo/Nombre</th>
-                                <th class="p-4">Precio/Noche</th>
-                                <th class="p-4">Estado</th>
-                                <th class="p-4 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rooms-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Huéspedes Section -->
-        <div id="huespedes-section" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-700">Registro de Huéspedes</h2>
-                <button id="add-guest-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" /></svg>
-                    <span>Nuevo Huésped</span>
-                </button>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-max text-left">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="p-4">Nombre</th>
-                                <th class="p-4">Documento</th>
-                                <th class="p-4">Teléfono</th>
-                                <th class="p-4 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="guests-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reportes Section -->
-        <div id="reportes-section" class="tab-content hidden">
-            <h2 class="text-2xl font-bold text-gray-700 mb-6">Reporte Mensual de Ingresos</h2>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="flex flex-wrap gap-4 items-center mb-6">
-                    <div>
-                        <label for="report-month" class="block text-sm font-medium text-gray-700">Mes</label>
-                        <select id="report-month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+    <div id="app-container" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <h1 class="text-xl sm:text-2xl font-bold text-blue-600">Hotel y Restaurante Mi Casita B&V</h1>
+                    <div class="flex items-center gap-4">
+                        <div id="current-time" class="text-sm text-gray-500 hidden sm:block"></div>
+                        <button id="logout-btn" class="text-sm font-semibold text-red-600 hover:text-red-800">Cerrar Sesión</button>
                     </div>
-                    <div>
-                        <label for="report-year" class="block text-sm font-medium text-gray-700">Año</label>
-                        <select id="report-year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
-                    </div>
-                    <button id="generate-report-btn" class="self-end bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">Generar Reporte</button>
-                    <button id="download-report-btn" class="self-end bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 hidden">Descargar CSV</button>
                 </div>
-                <div id="report-output"></div>
             </div>
-        </div>
-    </main>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex border-b border-gray-200">
+                    <button data-tab="reservas" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none tab-active">Reservas</button>
+                    <button data-tab="habitaciones" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Habitaciones</button>
+                    <button data-tab="huespedes" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Huéspedes</button>
+                    <button data-tab="reportes" class="tab-btn py-4 px-6 block hover:text-blue-500 focus:outline-none">Reportes</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Reservas Section -->
+            <div id="reservas-section" class="tab-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-700">Gestión de Reservas</h2>
+                    <button id="add-reservation-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        <span>Nueva Reserva</span>
+                    </button>
+                </div>
+                <!-- Reservation Sub-tabs -->
+                <div class="mb-6">
+                    <div class="bg-gray-200 rounded-lg p-1 flex w-full sm:w-auto">
+                        <button data-subtab="activas" class="sub-tab-btn w-full text-center px-4 py-2 rounded-md text-sm font-semibold sub-tab-active">Activas y Próximas</button>
+                        <button data-subtab="completadas" class="sub-tab-btn w-full text-center px-4 py-2 rounded-md text-sm font-semibold">Completadas</button>
+                    </div>
+                </div>
+
+                <!-- Active Reservations Table -->
+                <div id="activas-subcontent" class="sub-tab-content bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="p-4">Habitación</th>
+                                    <th class="p-4">Huésped</th>
+                                    <th class="p-4">Check-in/Out</th>
+                                    <th class="p-4">Total</th>
+                                    <th class="p-4">Pagado</th>
+                                    <th class="p-4">Saldo</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservations-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Completed Reservations Table -->
+                <div id="completadas-subcontent" class="sub-tab-content hidden bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="p-4">Habitación</th>
+                                    <th class="p-4">Huésped</th>
+                                    <th class="p-4">Check-in/Out</th>
+                                    <th class="p-4">Total Pagado</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completed-reservations-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Habitaciones Section -->
+            <div id="habitaciones-section" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-700">Gestión de Habitaciones</h2>
+                    <button id="add-room-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        <span>Nueva Habitación</span>
+                    </button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="p-4">Número</th>
+                                    <th class="p-4">Tipo/Nombre</th>
+                                    <th class="p-4">Precio/Noche</th>
+                                    <th class="p-4">Estado</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rooms-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Huéspedes Section -->
+            <div id="huespedes-section" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-700">Registro de Huéspedes</h2>
+                    <button id="add-guest-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z" /></svg>
+                        <span>Nuevo Huésped</span>
+                    </button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="p-4">Nombre</th>
+                                    <th class="p-4">Documento</th>
+                                    <th class="p-4">Teléfono</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guests-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reportes Section -->
+            <div id="reportes-section" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-gray-700 mb-6">Reporte Mensual de Ingresos</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex flex-wrap gap-4 items-center mb-6">
+                        <div>
+                            <label for="report-month" class="block text-sm font-medium text-gray-700">Mes</label>
+                            <select id="report-month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                        </div>
+                        <div>
+                            <label for="report-year" class="block text-sm font-medium text-gray-700">Año</label>
+                            <select id="report-year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                        </div>
+                        <button id="generate-report-btn" class="self-end bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">Generar Reporte</button>
+                        <button id="download-report-btn" class="self-end bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 hidden">Descargar CSV</button>
+                    </div>
+                    <div id="report-output"></div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <!-- Modals -->
     <!-- Room Modal -->
@@ -396,7 +422,7 @@
 <script type="module">
     // Importa las funciones de Firebase que necesitas
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, addDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Tu configuración de Firebase que proporcionaste
@@ -434,6 +460,8 @@
 
     // --- DOM ELEMENTS ---
     const loadingOverlay = document.getElementById('loading-overlay');
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     const subTabs = document.querySelectorAll('.sub-tab-btn');
@@ -450,6 +478,7 @@
     const markPaidModal = document.getElementById('mark-paid-modal');
 
     // Forms
+    const loginForm = document.getElementById('login-form');
     const roomForm = document.getElementById('room-form');
     const guestForm = document.getElementById('guest-form');
     const reservationForm = document.getElementById('reservation-form');
@@ -1077,7 +1106,9 @@
 
     // --- INITIALIZATION ---
     const initApp = () => {
+        appContainer.classList.remove('hidden');
         loadingOverlay.style.display = 'none';
+        
         const updateTime = () => { currentTimeEl.textContent = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }); };
         updateTime();
         setInterval(updateTime, 1000 * 60);
@@ -1105,31 +1136,38 @@
         if (user) {
             // User is signed in.
             console.log("User authenticated with UID:", user.uid);
+            loginScreen.style.display = 'none';
             initApp();
         } else {
-            // User is signed out. Sign in anonymously.
-            signInAnonymously(auth).catch((error) => {
-                console.error("Anonymous sign-in failed:", error);
-                if (error.code === 'auth/configuration-not-found') {
-                    loadingOverlay.innerHTML = `
-                        <p class="text-red-600 font-bold text-lg">Error de Configuración de Firebase</p>
-                        <p class="text-gray-700 mt-2">El inicio de sesión anónimo no está habilitado.</p>
-                        <p class="text-gray-600 mt-4 text-sm">
-                            <b>Solución:</b><br>
-                            1. Ve a tu <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 underline">Consola de Firebase</a>.<br>
-                            2. Selecciona tu proyecto: <b>hotel-mi-casita-admin</b>.<br>
-                            3. En el menú de la izquierda, ve a <b>Authentication</b>.<br>
-                            4. Haz clic en la pestaña <b>Sign-in method</b> (Método de inicio de sesión).<br>
-                            5. En la lista de proveedores, haz clic en <b>Anónimo</b> y habilítalo.<br>
-                            6. Guarda los cambios y recarga esta página.
-                        </p>
-                    `;
-                } else {
-                    loadingOverlay.innerHTML = `<p class="text-red-500">Error de conexión. No se pudo conectar a la base de datos.</p>`;
-                }
-            });
+            // User is signed out.
+            loadingOverlay.style.display = 'none';
+            appContainer.classList.add('hidden');
+            loginScreen.style.display = 'flex';
         }
     });
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            showToast('Inicio de sesión exitoso.');
+        } catch (error) {
+            console.error("Login failed:", error);
+            showToast('Error: Usuario o contraseña incorrectos.', true);
+        }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        signOut(auth).then(() => {
+            showToast('Has cerrado la sesión.');
+        }).catch((error) => {
+            console.error('Sign out error', error);
+            showToast('Error al cerrar sesión.', true);
+        });
+    });
+
 </script>
 
 </body>
